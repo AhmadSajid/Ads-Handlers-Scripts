@@ -504,7 +504,7 @@ public class AdmobController : MonoBehaviour
     #endregion
     #endregion
 
-/*    #region AppOPEN ADS
+    #region AppOPEN ADS
     private AppOpenAd ad;
 
     public bool IsAdAvailable
@@ -613,5 +613,5 @@ public class AdmobController : MonoBehaviour
                 args.AdValue.CurrencyCode, args.AdValue.Value);
     }
     #endregion
-    #endregion*/
+    #endregion
 }
