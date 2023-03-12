@@ -1,4 +1,4 @@
-﻿using UnityEngine.Events;
+using UnityEngine.Events;
 using UnityEngine;
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Common;
@@ -29,10 +29,6 @@ public class AdmobController : MonoBehaviour
     [Header("Interstitial")]
     public string androidInterstitial;
     public string iosInterstitial;
-
-    [Header("RewardedVideo")]
-    public string androidRewarded;
-    public string iosRewarded;
 
     int calledindex;
 
@@ -68,44 +64,24 @@ public class AdmobController : MonoBehaviour
 
         // Initialize the Google Mobile Ads SDK.
         MobileAds.Initialize(HandleInitCompleteAction);
-
     }
 
     private void HandleInitCompleteAction(InitializationStatus initstatus)
     {
-       // Callbacks from GoogleMobileAds are not guaranteed to be called on
-       // main thread.
-       // In this example we use MobileAdsEventExecutor to schedule these calls on
-       // the next Update() loop.
-       // Initialize the Mobile Ads SDK.
-
-		MobileAdsEventExecutor.ExecuteInUpdate(() =>
+        // Callbacks from GoogleMobileAds are not guaranteed to be called on
+        // main thread.
+        // In this example we use MobileAdsEventExecutor to schedule these calls on
+        // the next Update() loop.
+        MobileAdsEventExecutor.ExecuteInUpdate(() => 
         {
-            Dictionary<string, AdapterStatus> map = initstatus.getAdapterStatusMap();
-            foreach (KeyValuePair<string, AdapterStatus> keyValuePair in map)
-            {
-                string className = keyValuePair.Key;
-                AdapterStatus status = keyValuePair.Value;
-                switch (status.InitializationState)
-                {
-                    case AdapterState.NotReady:
-                        // The adapter initialization did not complete.
-                        MonoBehaviour.print("Adapter: " + className + " not ready.");
-                        break;
-                    case AdapterState.Ready:
-                        // The adapter was successfully initialized.
-                        MonoBehaviour.print("Adapter: " + className + " is initialized.");
-						//LoadOpenAd();
-						RequestBannerAd();
-						RequestAndLoadInterstitialAd();
-						RequestAndLoadRewardedAd();
-                        break;
-                }
-            }
+            LoadOpenAd();
+            //RequestBannerAd();
+            RequestAndLoadInterstitialAd();
+            
         });
-       
     }
-	
+
+
     #endregion
 
     #region HELPER METHODS
@@ -120,7 +96,6 @@ public class AdmobController : MonoBehaviour
     #endregion
 
     #region BANNER ADS
-
     public void RequestBannerAd()
     {
 
@@ -170,10 +145,12 @@ public class AdmobController : MonoBehaviour
         // Load a banner ad
         bannerView.LoadAd(CreateAdRequest());
     }
+
     public void HideBanner()
     {
         bannerView.Hide();
     }
+
     public void DestroyBannerAd()
     {
         if (bannerView != null)
@@ -209,7 +186,6 @@ public class AdmobController : MonoBehaviour
     #endregion
 
     #region INTERSTITIAL ADS
-
     public void RequestAndLoadInterstitialAd()
     {
 
@@ -264,7 +240,7 @@ public class AdmobController : MonoBehaviour
         interstitialAd.Show();
     }
 
-    public bool IsInitLoadInterstitial()
+    public bool IsInitLoad()
     {
         return interstitialAd.IsLoaded();
     }
@@ -298,207 +274,17 @@ public class AdmobController : MonoBehaviour
         print("HandleInterstitialClosed event received");
         RequestAndLoadInterstitialAd();
 
-        //if (calledindex == 1)
-        //    MenuHandler.Instance.playAfterAd();
-        //if (calledindex == 2)
-        //    MenuHandler.Instance.catgAfterAd();
-
+        if(calledindex==1)
+            UiManager.instance.retryafterad();
+        if (calledindex == 2)
+            FindObjectOfType<PlayerController>().afterdeath();
+        if (calledindex == 3)
+            FindObjectOfType<PlayerController>().afterwin();
     }
 
     public void HandleInterstitialLeftApplication(object sender, EventArgs args)
     {
         print("HandleInterstitialLeftApplication event received");
-    }
-
-    #endregion
-    #endregion
-
-    #region REWARDED ADS
-
-    public void RequestAndLoadRewardedAd()
-    {
-
-        string adUnitId = "";
-        // These ad units are configured to always serve test ads.
-        if (!TestMode)
-        {
-#if UNITY_EDITOR
-            adUnitId = "unused";
-#elif UNITY_ANDROID
-         adUnitId = androidRewarded;
-#elif UNITY_IPHONE
-         adUnitId = iosRewarded;
-#else
-         adUnitId = "unexpected_platform";
-#endif
-        }
-        else
-        {
-#if UNITY_EDITOR
-            adUnitId = "unused";
-#elif UNITY_ANDROID
-         adUnitId = "ca-app-pub-3940256099942544/5224354917";
-#elif UNITY_IPHONE
-         adUnitId = "ca-app-pub-3940256099942544/1712485313";
-#else
-         adUnitId = "unexpected_platform";
-#endif
-        }
-
-        // create new rewarded ad instance
-        rewardedAd = new RewardedAd(adUnitId);
-
-        /* // Add Event Handlers
-         rewardedAd.OnAdLoaded += (sender, args) => OnAdLoadedEvent.Invoke();
-         rewardedAd.OnAdFailedToLoad += (sender, args) => OnAdFailedToLoadEvent.Invoke();
-         rewardedAd.OnAdOpening += (sender, args) => OnAdOpeningEvent.Invoke();
-         rewardedAd.OnAdFailedToShow += (sender, args) => OnAdFailedToShowEvent.Invoke();
-         rewardedAd.OnAdClosed += (sender, args) => OnAdClosedEvent.Invoke();
-         rewardedAd.OnUserEarnedReward += (sender, args) => OnUserEarnedRewardEvent.Invoke();*/
-
-        // RewardBasedVideoAd is a singleton, so handlers should only be registered once.
-        this.rewardedAd.OnAdLoaded += this.HandleRewardBasedVideoLoaded;
-
-        this.rewardedAd.OnAdOpening += this.HandleRewardBasedVideoOpened;
-
-        this.rewardedAd.OnUserEarnedReward += this.HandleRewardBasedVideoRewarded;
-        this.rewardedAd.OnAdClosed += this.HandleRewardBasedVideoClosed;
-
-        // Create empty ad request
-        rewardedAd.LoadAd(CreateAdRequest());
-    }
-
-    public void ShowRewardedAd()
-    {
-        if (rewardedAd != null)
-        {
-            rewardedAd.Show();
-        }
-        else
-        {
-            Debug.Log("rewarded admob NAI CHALA");
-        }
-    }
-
-    public void RequestAndLoadRewardedInterstitialAd()
-    {
-
-        // These ad units are configured to always serve test ads.
-#if UNITY_EDITOR
-        string adUnitId = "unused";
-#elif UNITY_ANDROID
-            string adUnitId = "ca-app-pub-3940256099942544/5354046379";
-#elif UNITY_IPHONE
-            string adUnitId = "ca-app-pub-3940256099942544/6978759866";
-#else
-            string adUnitId = "unexpected_platform";
-#endif
-
-        // Create an interstitial.
-        RewardedInterstitialAd.LoadAd(adUnitId, CreateAdRequest(), (rewardedInterstitialAd, error) =>
-        {
-
-            if (error != null)
-            {
-                MobileAdsEventExecutor.ExecuteInUpdate(() =>
-                {
-
-                });
-                return;
-            }
-
-            this.rewardedInterstitialAd = rewardedInterstitialAd;
-            MobileAdsEventExecutor.ExecuteInUpdate(() =>
-            {
-
-            });
-            // Register for ad events.
-            this.rewardedInterstitialAd.OnAdDidPresentFullScreenContent += (sender, args) =>
-            {
-                MobileAdsEventExecutor.ExecuteInUpdate(() =>
-                {
-
-                });
-            };
-            this.rewardedInterstitialAd.OnAdDidDismissFullScreenContent += (sender, args) =>
-            {
-                MobileAdsEventExecutor.ExecuteInUpdate(() =>
-                {
-
-                });
-                this.rewardedInterstitialAd = null;
-            };
-            this.rewardedInterstitialAd.OnAdFailedToPresentFullScreenContent += (sender, args) =>
-            {
-                MobileAdsEventExecutor.ExecuteInUpdate(() =>
-                {
-
-                });
-                this.rewardedInterstitialAd = null;
-            };
-        });
-    }
-
-    public void ShowRewardedInterstitialAd()
-    {
-        if (rewardedInterstitialAd != null)
-        {
-            rewardedInterstitialAd.Show((reward) =>
-            {
-                MobileAdsEventExecutor.ExecuteInUpdate(() =>
-                {
-
-                });
-            });
-        }
-        else
-        {
-
-        }
-    }
-    #region RewardBasedVideo callback handlers
-
-    public void HandleRewardBasedVideoLoaded(object sender, EventArgs args)
-    {
-        MonoBehaviour.print("HandleRewardBasedVideoLoaded event received");
-    }
-
-    public void HandleRewardBasedVideoFailedToLoad(object sender, AdFailedToLoadEventArgs args)
-    {
-
-        MonoBehaviour.print(
-            "HandleRewardBasedVideoFailedToLoad event received with message: " + args.LoadAdError.GetDomain());
-    }
-
-    public void HandleRewardBasedVideoOpened(object sender, EventArgs args)
-    {
-        MonoBehaviour.print("HandleRewardBasedVideoOpened event received");
-    }
-
-    public void HandleRewardBasedVideoStarted(object sender, EventArgs args)
-    {
-        MonoBehaviour.print("HandleRewardBasedVideoStarted event received");
-    }
-
-    public void HandleRewardBasedVideoClosed(object sender, EventArgs args)
-    {
-        RequestAndLoadRewardedAd();
-        MonoBehaviour.print("HandleRewardBasedVideoClosed event received");
-    }
-
-    public void HandleRewardBasedVideoRewarded(object sender, Reward args)
-    {
-        //MenuHandler.Instance.DummyUnLocked();
-
-        string type = args.Type;
-        double amount = args.Amount;
-        MonoBehaviour.print(
-            "HandleRewardBasedVideoRewarded event received for " + amount.ToString() + " " + type);
-    }
-
-    public void HandleRewardBasedVideoLeftApplication(object sender, EventArgs args)
-    {
-        MonoBehaviour.print("HandleRewardBasedVideoLeftApplication event received");
     }
 
     #endregion
@@ -547,7 +333,7 @@ public class AdmobController : MonoBehaviour
         AdRequest request = new AdRequest.Builder().Build();
 
         // Load an app open ad for portrait orientation
-        AppOpenAd.LoadAd(adUnitId, ScreenOrientation.Portrait, request, ((appOpenAd, error) =>
+        AppOpenAd.LoadAd(adUnitId, ScreenOrientation.LandscapeLeft, request, ((appOpenAd, error) =>
         {
             if (error != null)
             {
@@ -576,7 +362,6 @@ public class AdmobController : MonoBehaviour
 
         ad.Show();
     }
-
     #region AppOpen callback handlers
     private void HandleAdDidDismissFullScreenContent(object sender, EventArgs args)
     {
